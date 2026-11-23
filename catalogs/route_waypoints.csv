@@ -1,0 +1,15 @@
+leg,order,pleiades_id,label,note
+salaria,1,758962698,Porta Salaria,start in Rome
+salaria,2,422923,Fidenae,
+salaria,3,413121,Eretum,
+salaria,4,413382,Vicus Novus/Ad Novas,
+salaria,5,413283,Reate,
+salaria,6,413024,Aquae Cutiliae,
+salaria,7,413181,Interocrium,
+salaria,8,413251,Phalacrinae,
+salaria,9,412992,Ad Centesimum,
+salaria,10,414510,Ponte di Quintodecimo,
+salaria,11,413036,Asculum,
+salaria,12,413074,Castrum Truentinum,end on the Adriatic
+salt_to_rome,1,MZ003,Le Vignole (salt works),start at the Tiber-mouth salt works; DARMC shortest path to Rome (approximate stand-in for the Via Campana / Portuensis)
+salt_to_rome,2,758962698,Porta Salaria,

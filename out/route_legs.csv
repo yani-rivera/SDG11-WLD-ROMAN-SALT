@@ -1,0 +1,13 @@
+﻿leg,from,to,km,snap_from_km,snap_to_km,flag
+salaria,Porta Salaria,Fidenae,9.2,0.05,0.85,False
+salaria,Fidenae,Eretum,19.72,0.85,0.12,False
+salaria,Eretum,Vicus Novus/Ad Novas,21.02,0.12,0.35,False
+salaria,Vicus Novus/Ad Novas,Reate,23.07,0.35,0.31,False
+salaria,Reate,Aquae Cutiliae,13.04,0.31,0.9,False
+salaria,Aquae Cutiliae,Interocrium,8.71,0.9,1.08,False
+salaria,Interocrium,Phalacrinae,23.75,1.08,3.57,True
+salaria,Phalacrinae,Ad Centesimum,23.51,3.57,1.03,True
+salaria,Ad Centesimum,Ponte di Quintodecimo,6.38,1.03,0.78,False
+salaria,Ponte di Quintodecimo,Asculum,20.28,0.78,0.26,False
+salaria,Asculum,Castrum Truentinum,26.94,0.26,2.21,False
+salt_to_rome,Le Vignole (salt works),Porta Salaria,27.22,0.63,0.05,False

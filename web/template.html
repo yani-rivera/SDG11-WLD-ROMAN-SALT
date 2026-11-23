@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>The Long, Short Road of Salt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: full-height map on the left, reading panel on the right; stacks on phones. */
+  --paper:#eef1f2; --sea:#d6e1e6; --land:#f8f8f5; --ink:#1d2b33; --muted:#5d6b73; --rule:#c5cfd4;
+  --road:#b49a6a; --salaria:#8a5a14;
+  --s-making:#127c7c; --s-heritage:#b07b16; --s-arch:#6a5d93; --s-closed:#b0412f; --s-none:#8b979e;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#121a1f; --sea:#16242c; --land:#22313a; --ink:#e6ecef; --muted:#9aaab3; --rule:#33444e;
+  --road:#8f7a52; --salaria:#e0a54a;
+  --s-making:#3cc0bd; --s-heritage:#e2a83c; --s-arch:#a497d6; --s-closed:#e2715e; --s-none:#7d8b92;
+  color-scheme:dark; }}
+:root[data-theme="dark"]{
+  --paper:#121a1f; --sea:#16242c; --land:#22313a; --ink:#e6ecef; --muted:#9aaab3; --rule:#33444e;
+  --road:#8f7a52; --salaria:#e0a54a;
+  --s-making:#3cc0bd; --s-heritage:#e2a83c; --s-arch:#a497d6; --s-closed:#e2715e; --s-none:#7d8b92;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--body);display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr)}
+header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:14px 20px;border-bottom:1px solid var(--rule)}
+h1{font:600 clamp(20px,2.6vw,28px)/1.15 var(--display);letter-spacing:.04em;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--muted)}
+.views{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+button{font:600 14px var(--body);color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button:focus-visible,a:focus-visible,.chip:focus-visible{outline:2px solid var(--s-making);outline-offset:2px}
+#mapwrap{position:relative;min-height:0;background:var(--sea)}
+svg{display:block;width:100%;height:100%}
+.land,.road,.route,.site,.st .mk{vector-effect:non-scaling-stroke}
+.land{fill:var(--land);stroke:var(--rule);stroke-width:.5}
+.road{fill:none;stroke:var(--road);stroke-opacity:.45;stroke-width:.6}
+.road.m{stroke-opacity:.7;stroke-width:.9}
+.route{fill:none;stroke:var(--salaria);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.route.salt_to_rome{stroke-dasharray:4 4;stroke-width:2.2}
+.hit{fill:transparent;stroke:none;cursor:pointer}
+.site{stroke:var(--land);stroke-width:1.2;cursor:pointer}
+.site.not_checked{fill:var(--land)!important;stroke:var(--s-none);stroke-width:1.6}
+.site.far{stroke:var(--ink);stroke-width:1.6}
+.st{cursor:pointer}
+.st .mk{stroke:var(--ink);stroke-width:1.4}
+.label{font:600 11px var(--body);fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3px;pointer-events:none}
+.sel{stroke:var(--ink)!important;stroke-width:2.6!important}
+.legend{position:absolute;left:12px;bottom:12px;background:var(--land);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;max-width:min(92%,330px);font-size:13px}
+.legend summary{cursor:pointer;font:600 13px var(--body);min-height:32px;display:flex;align-items:center}
+.legend h3{margin:0 0 6px;font:600 12px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:32px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:2px 9px;cursor:pointer;user-select:none;background:transparent;font:13px var(--body);color:var(--ink)}
+.chip[aria-pressed="true"]{background:transparent;color:var(--ink);border-color:var(--rule)}
+.chip[aria-pressed="false"]{opacity:.4}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hint{position:absolute;right:12px;top:12px;background:var(--land);border:1px solid var(--rule);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--muted)}
+aside{border-left:1px solid var(--rule);overflow-y:auto;padding:18px 20px 28px;display:flex;flex-direction:column;gap:18px;min-height:0}
+aside h2{font:600 20px/1.2 var(--display);margin:0;letter-spacing:.03em;text-wrap:balance}
+aside h4{margin:0 0 4px;font:600 12px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:600;color:#fff}
+.thennow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.thennow div{border:1px solid var(--rule);border-radius:8px;padding:8px 10px}
+.src a{color:inherit;word-break:break-word}
+.src li{margin:2px 0}
+.src ul{margin:0;padding-left:18px;font-size:13px}
+.note{color:var(--muted);font-size:13px}
+.counts{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.counts div{border-left:4px solid;padding:2px 8px;font-size:13px}
+.counts b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{text-align:left;padding:3px 4px;border-bottom:1px solid var(--rule);vertical-align:top}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+tr.clk{cursor:pointer}
+footer{font-size:12px;color:var(--muted)}
+@media (max-width:820px){
+  body{grid-template-columns:1fr;grid-template-rows:auto 62vh auto;grid-template-rows:auto 62svh auto}
+  aside{border-left:0;border-top:1px solid var(--rule);overflow:visible;padding:16px}
+  header{padding:12px 16px}
+  .views{margin-left:0;width:100%}
+  .views button{flex:1 1 auto;min-height:40px}
+  .legend{left:8px;right:8px;bottom:8px;max-width:none;max-height:45%;overflow-y:auto;padding:6px 10px}
+  .hint{top:8px;right:8px}
+  .thennow{grid-template-columns:1fr}
+  td,th{padding:6px 4px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <p id="subtitle"></p>
+  <div class="views" role="group" aria-label="Map view">
+    <button id="v-salaria" aria-pressed="true">Via Salaria</button>
+    <button id="v-empire" aria-pressed="false">Across the empire</button>
+    <button id="v-far" aria-pressed="false">As far as Tibet</button>
+  </div>
+</header>
+<div id="mapwrap">
+  <svg id="map" role="img" aria-label="Map of Roman salt sites and the Via Salaria"></svg>
+  <div class="hint" id="hint">Scroll to zoom · click a place</div>
+  <details class="legend" id="legend" open>
+    <summary>Legend and filters</summary>
+    <h3>Salt sites today</h3>
+    <div class="chips" id="chips"></div>
+    <h3 style="margin-top:8px">Via Salaria stations today</h3>
+    <div class="chips" id="stchips"></div>
+  </details>
+</div>
+<aside id="panel" aria-live="polite"></aside>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js" integrity="sha384-su5kReKyYlIFrI62mbQRKXHzFobMa7BHp1cK6julLPbnYcCW9NIZKJiTODjLPeDh" crossorigin="anonymous"></script>
+<script>
+if (!window.d3) document.body.insertAdjacentHTML("afterbegin", '<p style="padding:12px;margin:0;background:#b0412f;color:#fff">The map library did not load. Check your connection and reload the page.</p>');
+const DATA = /*__DATA__*/null;
+const S_COLORS = {making_salt:"--s-making", heritage:"--s-heritage", archaeology:"--s-arch", closed:"--s-closed", not_checked:"--s-none"};
+const S_LABELS = {making_salt:"Still making salt", heritage:"Salt heritage", archaeology:"Archaeological site", closed:"Closed recently", not_checked:"Not checked yet"};
+const ST_LABELS = {living_town:"Living town", archaeological_site:"Archaeological site", monument:"Surviving monument", in_rome:"Inside Rome", approximate:"Approximate place", lost:"Lost"};
+const GRADE = {A:"Roman production confirmed (excavated and dated)", B:"Roman production probable", C:"Roman production possible", D:"Roman production weakly supported", E:"Unverified candidate", P:"Salt making outside the Roman period (comparison)", X:"Outside the Roman world (far-away comparison)"};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+document.getElementById("title").textContent = DATA.meta.title;
+document.getElementById("subtitle").textContent = DATA.meta.subtitle;
+
+const svg = d3.select("#map"), g = svg.append("g");
+const proj = d3.geoConicConformal().parallels([35, 50]).rotate([-15, 0]);
+const path = d3.geoPath(proj);
+const sitesMapped = DATA.sites.filter(s => s.lat !== null);
+const salaria = DATA.routes.find(r => r.properties.leg === "salaria");
+const salt2rome = DATA.routes.find(r => r.properties.leg === "salt_to_rome");
+
+const gLand = g.append("g"), gRoads = g.append("g"), gRoute = g.append("g"), gSt = g.append("g"), gSites = g.append("g"), gLab = g.append("g");
+let W, H, k = 1, selected = null;
+const hidden = new Set(), stHidden = new Set();
+
+function size(){
+  const r = document.getElementById("mapwrap").getBoundingClientRect();
+  W = r.width; H = r.height;
+  proj.fitExtent([[20,20],[W-20,H-20]], {type:"FeatureCollection", features: DATA.land});
+}
+
+function drawStatic(){
+  gLand.selectAll("path").data(DATA.land).join("path").attr("class","land").attr("d", path);
+  gRoads.selectAll("path").data(DATA.roads).join("path").attr("class", d => "road" + (d.properties.m ? " m":"")).attr("d", path);
+  gRoute.selectAll("path").data(DATA.routes).join("path").attr("class", d => "route " + d.properties.leg).attr("d", path);
+}
+
+function symbolFor(status){
+  return {living_town:d3.symbolCircle, archaeological_site:d3.symbolCircle, monument:d3.symbolSquare,
+          in_rome:d3.symbolCircle, approximate:d3.symbolDiamond, lost:d3.symbolCross}[status] || d3.symbolCircle;
+}
+
+function drawMarkers(){
+  const sw = 1 / k;
+  const st = gSt.selectAll("g.st").data(DATA.stations.filter(d => !stHidden.has(d.properties.now_status)), d => d.properties.pleiades_id)
+    .join(enter => { const e = enter.append("g").attr("class","st").attr("tabindex",0);
+      e.append("path").attr("class","mk"); e.on("click", (ev,d) => showStation(d)).on("keydown",(ev,d)=>{if(ev.key==="Enter")showStation(d)}); return e; });
+  st.attr("transform", d => { const [x,y] = proj(d.geometry.coordinates); return `translate(${x},${y}) scale(${sw})`; })
+    .select("path").attr("d", d => d3.symbol(symbolFor(d.properties.now_status), d.properties.now_status==="in_rome" ? 18 : 46)())
+    .attr("fill", d => ["archaeological_site","approximate","lost"].includes(d.properties.now_status) ? css("--land") : css("--salaria"))
+    .attr("stroke", css("--salaria"))
+    .classed("sel", d => selected === d.properties.pleiades_id);
+
+  const touch = matchMedia("(pointer: coarse)").matches;
+  gSites.selectAll("circle.hit").data(sitesMapped.filter(d => !hidden.has(d.now_status)), d => d.site_id)
+    .join(enter => enter.append("circle").attr("class","hit").attr("aria-hidden","true").on("click",(ev,d)=>showSite(d)))
+    .attr("cx", d => proj([d.lon,d.lat])[0]).attr("cy", d => proj([d.lon,d.lat])[1]).attr("r", (touch ? 16 : 9) / k);
+  const s = gSites.selectAll("circle:not(.hit)").data(sitesMapped.filter(d => !hidden.has(d.now_status)), d => d.site_id)
+    .join(enter => enter.append("circle").attr("tabindex",0).on("click",(ev,d)=>showSite(d)).on("keydown",(ev,d)=>{if(ev.key==="Enter")showSite(d)}));
+  s.attr("cx", d => proj([d.lon,d.lat])[0]).attr("cy", d => proj([d.lon,d.lat])[1])
+    .attr("r", d => (d.map_layer==="far_comparison" ? 8 : 6) / k)
+    .attr("class", d => "site " + d.now_status + (d.map_layer==="far_comparison" ? " far" : "") + (selected===d.site_id ? " sel":""))
+    .attr("fill", d => css(S_COLORS[d.now_status]));
+  s.selectAll("title").data(d => [d]).join("title").text(d => `${d.location} · ${S_LABELS[d.now_status]}`);
+
+  // labels: main stations when zoomed in, a few sites otherwise
+  const showSt = k > 2.2;
+  const labs = [];
+  if (showSt) DATA.stations.forEach(d => { if (d.properties.on_main_route==="yes" && d.properties.now_status!=="in_rome" && !stHidden.has(d.properties.now_status)) labs.push({id:"st"+d.properties.pleiades_id, t:d.properties.pleiades_title, xy:proj(d.geometry.coordinates)}); });
+  if (showSt) labs.push({id:"rome", t:"Rome", xy:proj([12.4964,41.9028])});
+  if (k > 4.5) sitesMapped.filter(d => !hidden.has(d.now_status)).forEach(d => labs.push({id:d.site_id, t:d.location.split("(")[0].trim(), xy:proj([d.lon,d.lat])}));
+  if (k < 2.2) sitesMapped.filter(d => d.map_layer==="far_comparison").forEach(d => labs.push({id:d.site_id, t:"Yanjing, Tibet", xy:proj([d.lon,d.lat])}));
+  gLab.selectAll("text").data(labs, d => d.id).join("text").attr("class","label")
+    .attr("x", d => d.xy[0] + 8/k).attr("y", d => d.xy[1] + 4/k)
+    .style("font-size", (11/k)+"px").style("stroke-width", (3/k)+"px").text(d => d.t);
+}
+
+const zoom = d3.zoom().scaleExtent([0.3, 60]).on("zoom", ev => { k = ev.transform.k; g.attr("transform", ev.transform);
+  drawMarkers(); });
+svg.call(zoom);
+
+function bboxOf(features){
+  const [[x0,y0],[x1,y1]] = d3.geoPath(proj).bounds({type:"FeatureCollection", features});
+  return [[x0,y0],[x1,y1]];
+}
+function pts(arr){ return arr.map(([lon,lat]) => ({type:"Feature", geometry:{type:"Point", coordinates:[lon,lat]}})); }
+function zoomTo(features, pad=40, instant=false){
+  const box = svg.node().getBoundingClientRect(); W = box.width; H = box.height;
+  if (W < 500) pad = Math.min(pad, 24);
+  const [[x0,y0],[x1,y1]] = bboxOf(features);
+  const s = Math.min(60, Math.min((W - 2*pad) / Math.max(x1-x0, 1e-6), (H - 2*pad) / Math.max(y1-y0, 1e-6)));
+  const t = d3.zoomIdentity.translate(W/2, H/2).scale(s).translate(-(x0+x1)/2, -(y0+y1)/2);
+  const reduce = instant || matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (reduce ? svg : svg.transition().duration(900)).call(zoom.transform, t);
+}
+const VIEWS = {
+  salaria: (instant) => zoomTo([salaria, salt2rome], 40, instant),
+  empire: () => zoomTo(pts(sitesMapped.filter(d => d.map_layer!=="far_comparison").map(d => [d.lon,d.lat]))),
+  far: () => zoomTo(pts(sitesMapped.map(d => [d.lon,d.lat])))
+};
+function setView(v){
+  ["salaria","empire","far"].forEach(n => document.getElementById("v-"+n).setAttribute("aria-pressed", n===v));
+  VIEWS[v](); if (!selected) intro(v);
+}
+["salaria","empire","far"].forEach(n => document.getElementById("v-"+n).addEventListener("click", () => { selected = null; setView(n); }));
+
+// legend chips
+function chipRow(el, labels, colorFn, set){
+  Object.entries(labels).forEach(([key, lab]) => {
+    const b = document.createElement("button"); b.className = "chip"; b.setAttribute("aria-pressed","true");
+    b.innerHTML = `<span class="dot" style="${colorFn(key)}"></span>${esc(lab)}`;
+    b.addEventListener("click", () => { set.has(key) ? set.delete(key) : set.add(key); b.setAttribute("aria-pressed", !set.has(key)); drawMarkers(); });
+    el.appendChild(b);
+  });
+}
+chipRow(document.getElementById("chips"), S_LABELS, k => k==="not_checked" ? `border:2px solid var(--s-none)` : `background:var(${S_COLORS[k]})`, hidden);
+chipRow(document.getElementById("stchips"), ST_LABELS, k => ["archaeological_site","approximate","lost"].includes(k) ? `border:2px solid var(--salaria)` : `background:var(--salaria)`, stHidden);
+
+// panel
+const panel = document.getElementById("panel");
+function sources(str){
+  const items = String(str||"").split("|").map(s => s.trim()).filter(u => /^https?:\/\/[^\s"'<>]+$/i.test(u));
+  if (!items.length) return `<p class="note">No source checked yet.</p>`;
+  return `<ul>${items.map(u => `<li><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\//,"").slice(0,70))}</a></li>`).join("")}</ul>`;
+}
+function counts(){
+  const c = d3.rollup(DATA.sites, v => v.length, d => d.now_status);
+  return `<div class="counts">${Object.keys(S_LABELS).map(k2 => `<div style="border-color:var(${S_COLORS[k2]})"><b>${c.get(k2)||0}</b>${S_LABELS[k2]}</div>`).join("")}</div>`;
+}
+function intro(view){
+  const r = salaria.properties, unm = DATA.sites.filter(s => s.lat === null);
+  const stRows = DATA.stations.filter(d => d.properties.on_main_route==="yes").sort((a,b)=>a.properties.route_km-b.properties.route_km)
+    .map(d => `<tr class="clk" data-id="${esc(d.properties.pleiades_id)}"><td>${esc(d.properties.pleiades_title)}</td><td>${esc(d.properties.now_place)}</td><td>${esc(ST_LABELS[d.properties.now_status])}</td><td class="n">${d.properties.route_km}</td></tr>`).join("");
+  panel.innerHTML = `
+    <section><h2>Where the salt went inland</h2>
+    <p>Salt from the pans at the mouth of the Tiber travelled up the Via Salaria to the Sabine hills and on to the Adriatic. Pliny tied the road's name to that trade. Today some of the old salt places still make salt, and others are museums, spas or quiet ruins.</p>
+    <p class="note">The traced line runs ${r.km} km from Porta Salaria to Castrum Truentinum on the DARMC road network (${r.pct}% of it marked certain). The usual figure for the ancient road is 242 km; DARMC straightens the bends.</p></section>
+    <section><h4>The ${DATA.sites.length} salt sites today</h4>${counts()}</section>
+    <section><h4>Stations on the main road</h4>
+    <table><thead><tr><th>Then</th><th>Now</th><th>Status</th><th class="n">km</th></tr></thead><tbody>${stRows}</tbody></table>
+    <p class="note">km = distance along the traced line from Porta Salaria. Click a row to see the place.</p></section>
+    <section><h4>How sure are we?</h4><table>${Object.entries(GRADE).map(([g2,l]) => `<tr><td><b>${g2}</b></td><td>${esc(l)}</td></tr>`).join("")}</table>
+    <p class="note">The grade says how well Roman salt making is proven at the site. The colour on the map says what the place is today.</p></section>
+    ${unm.length ? `<section><h4>Not on the map yet</h4><p class="note">${unm.map(s => `${esc(s.location)} (${esc(s.site_id)})`).join(", ")}: the place name matches more than one village, so these sites need a coordinate.</p></section>` : ""}
+    <footer>Roads: DARMC Roman Road Network v2008 (CC BY-NC 3.0). Places: Pleiades (CC BY 3.0), GeoNames (CC BY 4.0). Land: Natural Earth. Full sources are in the README. v${esc(DATA.meta.version)}</footer>`;
+  panel.querySelectorAll("tr.clk").forEach(tr => tr.addEventListener("click", () => { revealMap(); showStation(DATA.stations.find(d => d.properties.pleiades_id === tr.dataset.id)); }));
+}
+function back(){ return `<button id="back">Back to overview</button>`; }
+function wireBack(){ document.getElementById("back").addEventListener("click", () => { selected = null; drawMarkers(); intro(); }); }
+function showSite(d){
+  selected = d.site_id; drawMarkers();
+  panel.innerHTML = `${back()}
+    <section><h2>${esc(d.location)}</h2><p class="note">${esc(d.modern_country)} · ${esc(d.site_id)}</p></section>
+    <div class="thennow">
+      <div><h4>Then</h4><b>Grade ${esc(d.roman_production_grade)}</b><br>${esc(GRADE[d.roman_production_grade]||d.roman_production_grade_label)}<br><span class="note">${esc(d.date_v2)}</span></div>
+      <div><h4>Now</h4><span class="pill" style="background:var(${S_COLORS[d.now_status]})">${esc(S_LABELS[d.now_status])}</span><p style="margin:6px 0 0">${esc(d.now_note)}</p></div>
+    </div>
+    <section class="src"><h4>Sources for today's status</h4>${sources(d.status_sources)}</section>
+    <section class="src"><h4>Sources for the Roman evidence</h4>${sources(d.reference_dois_v2 || d.pleiades_uris)}</section>
+    <section><h4>Where the point comes from</h4><p class="note">${esc(d.coord_source)}${d.coord_note ? ". " + esc(d.coord_note) : ""}. Stated uncertainty: ${esc(d.location_uncertainty_m)} m.</p></section>`;
+  wireBack();
+}
+function showStation(f){
+  const d = f.properties; selected = d.pleiades_id; drawMarkers();
+  if (k < 3) zoomTo([f, ...pts([[f.geometry.coordinates[0]+0.25, f.geometry.coordinates[1]+0.15],[f.geometry.coordinates[0]-0.25, f.geometry.coordinates[1]-0.15]])]);
+  panel.innerHTML = `${back()}
+    <section><h2>${esc(d.pleiades_title)}</h2><p class="note">Via Salaria · ${d.route_km} km from Porta Salaria · ${d.distance_to_route_m} m from the traced line</p></section>
+    <div class="thennow">
+      <div><h4>Then</h4>${esc(d.then)}</div>
+      <div><h4>Now</h4><b>${esc(ST_LABELS[d.now_status])}</b><br>${esc(d.now_place)}</div>
+    </div>
+    <p>${esc(d.now_note)}</p>
+    ${d.on_main_route!=="yes" ? `<p class="note">Linked to the road in Pleiades but not used as a waypoint for the traced line.</p>` : ""}
+    <section class="src"><h4>Sources</h4>${sources(d.status_sources)}</section>`;
+  wireBack();
+}
+
+const narrow = matchMedia("(max-width: 820px)");
+if (narrow.matches) document.getElementById("legend").open = false;
+if (matchMedia("(pointer: coarse)").matches) document.getElementById("hint").textContent = "Pinch to zoom · tap a place";
+function revealMap(){ if (narrow.matches) document.getElementById("mapwrap").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"}); }
+function render(){ size(); drawStatic(); drawMarkers(); }
+render(); intro(); requestAnimationFrame(() => VIEWS.salaria(true));
+// re-fit only when the width changes, so the phone address bar showing/hiding does not reset the view
+let rt, lastW = innerWidth; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (innerWidth === lastW) return; lastW = innerWidth; render(); VIEWS.salaria(true); }, 200); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawMarkers);
+</script>
+</body>
+</html>

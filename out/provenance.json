@@ -1,0 +1,108 @@
+{
+  "project": "roman_salt_interactive",
+  "script_version": "1.0.1",
+  "run_utc": "2026-11-23T17:15:16+00:00",
+  "python": "3.13.18",
+  "pleiades_snapshot_commit": "9662ecb0a4e1ef58d332d2dc8aeb11ab97544134 2026-11-23T07:57:56-06:00",
+  "inputs": {
+    "sites_csv": {
+      "path": "data/saltcities.csv",
+      "sha256": "e97968ba02ee3d64748bd630be3ca4400d7b0ddc31e38eb6d289a09c8d6780f0"
+    },
+    "stations_gpkg": {
+      "path": "data/viasalaria.gpkg",
+      "sha256": "589694b7a94a48775161a62e705dca02d3737f8790418415b6832f76527efa07"
+    },
+    "countries_gpkg": {
+      "path": "data/roman.gpkg",
+      "sha256": "f8738d2aa66ec9f2d98eb4bbfaecf07f4771115e27740116d273dc9b8d5fde22"
+    },
+    "darmc_roads": {
+      "path": "external/darmc/roman_roads_v2008.gpkg",
+      "sha256": "11ffc4b38f40c4d53dd77396a868f729b875090ed084f4a56ab2839f40c6d4e6"
+    },
+    "pleiades_places": {
+      "path": "../dl_pleiades/pleiades.datasets/data/gis/places.csv",
+      "sha256": "b632315938a9905ab1da3a61c7f440bcd227ba39dd8f6cfdfa1e12b3270d1c58"
+    },
+    "geonames_cities": {
+      "path": "../dl_geonames/cities.json",
+      "sha256": "467174e3e2f3c799230f31c1164451a973fe17ed8a26ae15bd076a127dfd3557"
+    },
+    "catalog:site_status": {
+      "path": "catalogs/site_status.csv",
+      "sha256": "ce444373d3cd640993c01707a5cef179d013b93ee25d58d3aa6caaeb27012091"
+    },
+    "catalog:station_status": {
+      "path": "catalogs/station_status.csv",
+      "sha256": "c62fc0275502a47c21a463d5234040e6b2625624b558266b18f79ce6bd2b6b94"
+    },
+    "catalog:route_waypoints": {
+      "path": "catalogs/route_waypoints.csv",
+      "sha256": "cdd07dc1869f8d4023fc47ba9161884d36d9b94b1435d29e82fcb6135bd41f32"
+    },
+    "catalog:extra_sites": {
+      "path": "catalogs/extra_sites.csv",
+      "sha256": "191a8e5157e1e4f77d5b749187fe9eb6964815a79a934d702b2e75a9741a5731"
+    }
+  },
+  "outputs": {
+    "sites_csv": "out/salt_sites_status.csv",
+    "sites_geojson": "out/salt_sites_status.geojson",
+    "stations_csv": "out/via_salaria_stations_status.csv",
+    "stations_geojson": "out/via_salaria_stations_status.geojson",
+    "routes_geojson": "out/routes.geojson",
+    "legs_csv": "out/route_legs.csv",
+    "page": "out/index.html"
+  },
+  "notes": {
+    "sites_total": 44,
+    "sites_mapped": 42,
+    "sites_unmapped": [
+      "DA006",
+      "DA008"
+    ],
+    "status_counts": {
+      "not_checked": 13,
+      "making_salt": 12,
+      "archaeology": 10,
+      "heritage": 8,
+      "closed": 1
+    },
+    "routes": [
+      {
+        "leg": "salaria",
+        "length_km": 195.6,
+        "pct_length_certain": 15.3,
+        "darmc_objectids": "82,83,85,86,87,266,2645,2667,2668,2683,2684,4109,5128"
+      },
+      {
+        "leg": "salt_to_rome",
+        "length_km": 27.2,
+        "pct_length_certain": 51.7,
+        "darmc_objectids": "82,89,109,110,112,114,116,117,265,4191,4192,4671"
+      }
+    ],
+    "flagged_legs": [
+      {
+        "leg": "salaria",
+        "from": "Interocrium",
+        "to": "Phalacrinae",
+        "km": 23.75,
+        "snap_from_km": 1.08,
+        "snap_to_km": 3.57,
+        "flag": true
+      },
+      {
+        "leg": "salaria",
+        "from": "Phalacrinae",
+        "to": "Ad Centesimum",
+        "km": 23.51,
+        "snap_from_km": 3.57,
+        "snap_to_km": 1.03,
+        "flag": true
+      }
+    ],
+    "licences": "Road lines derive from DARMC (CC BY-NC 3.0); Pleiades points CC BY 3.0; GeoNames points CC BY 4.0; Natural Earth public domain."
+  }
+}

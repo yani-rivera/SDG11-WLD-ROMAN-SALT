@@ -1,0 +1,35 @@
+project: roman_salt_interactive
+version: "1.0.1"
+title: "The Long, Short Road of Salt"
+subtitle: "Roman salt sites, the Via Salaria, and what each place is today"
+
+inputs:
+  sites_csv: data/saltcities.csv
+  stations_gpkg: data/viasalaria.gpkg
+  stations_layer: via_salaria_stations
+  countries_gpkg: data/roman.gpkg
+  countries_layer: ne_50m_admin_0_countries_copy
+  darmc_roads: external/darmc/roman_roads_v2008.gpkg
+  pleiades_places: ../dl_pleiades/pleiades.datasets/data/gis/places.csv
+  pleiades_repo: ../dl_pleiades/pleiades.datasets
+  geonames_cities: ../dl_geonames/cities.json
+
+catalogs:
+  site_status: catalogs/site_status.csv
+  station_status: catalogs/station_status.csv
+  route_waypoints: catalogs/route_waypoints.csv
+  extra_sites: catalogs/extra_sites.csv
+
+route:
+  node_snap_m: 50          # vertices closer than this are joined into one node
+  flag_snap_km: 2.5        # waypoint snaps farther than this are flagged
+  metric_crs: "EPSG:3035"
+
+web:
+  road_simplify_m: 1500    # simplification of the empire-wide road network
+  land_simplify_deg: 0.02
+  bbox_empire: [-11, 24, 45, 57]   # lon_min, lat_min, lon_max, lat_max
+
+outputs:
+  dir: out
+  encoding: utf-8-sig
