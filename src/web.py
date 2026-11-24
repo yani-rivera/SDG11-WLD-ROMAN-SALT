@@ -48,7 +48,7 @@ def road_layer(cfg, roads_m):
     return [_feature(g, {"m": int(m)}) for g, m in zip(r.geometry, major) if not g.is_empty]
 
 
-def build_page(cfg, sites_df, stations, routes, legs, roads_m):
+def build_page(cfg, sites_df, stations, routes, route_pieces, legs, roads_m):
     site_cols = ["site_id", "location", "modern_country", "roman_production_grade",
                  "roman_production_grade_label", "date_v2", "map_layer", "location_uncertainty_m",
                  "now_status", "now_label", "now_note", "checked", "status_sources",
@@ -69,11 +69,14 @@ def build_page(cfg, sites_df, stations, routes, legs, roads_m):
     routes_out = [_feature(g, {"leg": l, "km": k, "pct": pc})
                   for l, k, pc, g in zip(routes.leg, routes.length_km, routes.pct_length_certain,
                                          routes.geometry)]
+    pieces_out = [_feature(g, {"leg": l, "c": bool(c)})
+                  for l, c, g in zip(route_pieces.leg, route_pieces.certain, route_pieces.geometry)]
     data = {
         "meta": {"title": cfg["title"], "subtitle": cfg["subtitle"], "version": cfg["version"]},
         "land": land_layer(cfg),
         "roads": road_layer(cfg, roads_m),
         "routes": routes_out,
+        "pieces": pieces_out,
         "stations": stations_out,
         "sites": sites,
     }

@@ -1,7 +1,7 @@
 {
   "project": "roman_salt_interactive",
-  "script_version": "1.0.1",
-  "run_utc": "2026-11-23T17:15:16+00:00",
+  "script_version": "1.1.0",
+  "run_utc": "2026-11-24T20:51:13+00:00",
   "python": "3.13.18",
   "pleiades_snapshot_commit": "9662ecb0a4e1ef58d332d2dc8aeb11ab97544134 2026-11-23T07:57:56-06:00",
   "inputs": {
@@ -52,6 +52,8 @@
     "stations_csv": "out/via_salaria_stations_status.csv",
     "stations_geojson": "out/via_salaria_stations_status.geojson",
     "routes_geojson": "out/routes.geojson",
+    "route_pieces_geojson": "out/route_pieces.geojson",
+    "route_pieces_csv": "out/route_pieces.csv",
     "legs_csv": "out/route_legs.csv",
     "page": "out/index.html"
   },
@@ -73,14 +75,36 @@
       {
         "leg": "salaria",
         "length_km": 195.6,
-        "pct_length_certain": 15.3,
+        "pct_length_certain": 15.9,
         "darmc_objectids": "82,83,85,86,87,266,2645,2667,2668,2683,2684,4109,5128"
       },
       {
         "leg": "salt_to_rome",
         "length_km": 27.2,
-        "pct_length_certain": 51.7,
+        "pct_length_certain": 56.2,
         "darmc_objectids": "82,89,109,110,112,114,116,117,265,4191,4192,4671"
+      }
+    ],
+    "route_certainty": [
+      {
+        "leg": "salaria",
+        "certain": false,
+        "length_km": 164.5
+      },
+      {
+        "leg": "salaria",
+        "certain": true,
+        "length_km": 31.1
+      },
+      {
+        "leg": "salt_to_rome",
+        "certain": false,
+        "length_km": 11.9
+      },
+      {
+        "leg": "salt_to_rome",
+        "certain": true,
+        "length_km": 15.3
       }
     ],
     "flagged_legs": [

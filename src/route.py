@@ -3,6 +3,9 @@
 DARMC roads carry no names, so every vertex becomes a graph node (vertices within
 node_snap_m are merged), each waypoint is snapped to its nearest node, and consecutive
 waypoints are joined by the shortest path. Same method as roman_salt_enrich v1.2.0.
+
+Since v1.1.0 each traced line is also split into pieces by DARMC's CERTAINTY field, so the
+map can draw the stretches whose course is marked certain differently from the rest.
 """
 import geopandas as gpd
 import networkx as nx
@@ -59,6 +62,27 @@ def build_graph(roads, snap_m):
     return G, coords, node_ids
 
 
+def is_certain(values):
+    """DARMC CERTAINTY -> bool (the field is stored as Yes/No text)."""
+    return values.astype(str).str.strip().str.lower().isin(["yes", "y", "1", "true"])
+
+
+def split_by_certainty(G, coords, path_nodes, certain_by_seg):
+    """Cut a node path into runs of edges that share the same certainty."""
+    pieces, run, run_cert, run_segs = [], [path_nodes[0]], None, set()
+    for u, v in zip(path_nodes[:-1], path_nodes[1:]):
+        seg = G[u][v]["seg"]
+        c = bool(certain_by_seg[seg])
+        if run_cert is not None and c != run_cert:
+            pieces.append((run, run_cert, run_segs))
+            run, run_segs = [u], set()
+        run.append(v)
+        run_segs.add(seg)
+        run_cert = c
+    pieces.append((run, run_cert, run_segs))
+    return [(LineString([coords[n] for n in nodes]), c, segs) for nodes, c, segs in pieces]
+
+
 def snap(G, coords, node_ids, pt):
     tree = cKDTree(coords[node_ids])
     d, i = tree.query([pt.x, pt.y])
@@ -81,9 +105,15 @@ def trace_leg(G, coords, node_ids, roads, waypoints, flag_km):
                      "flag": (da / 1000 > flag_km) or (db / 1000 > flag_km)})
     line = LineString([coords[n] for n in path_nodes])
     used = roads.loc[sorted(segs)]
-    cert = used.CERTAINTY.astype(str).str.lower().isin(["yes", "y", "1", "true"])
-    pct_certain = round(100 * used.length[cert].sum() / used.length.sum(), 1)
-    return line, pd.DataFrame(legs), sorted(map(int, used.OBJECTID)), pct_certain
+    certain_by_seg = is_certain(roads.CERTAINTY)
+    pieces = split_by_certainty(G, coords, path_nodes, certain_by_seg)
+    # share of the traced line itself (not of the whole DARMC segments it touches)
+    certain_m = sum(ln.length for ln, c, _ in pieces if c)
+    pct_certain = round(100 * certain_m / line.length, 1)
+    pieces = [{"certain": c, "length_km": round(ln.length / 1000, 2),
+               "darmc_objectids": ",".join(str(int(roads.loc[i, "OBJECTID"])) for i in sorted(sg)),
+               "geometry": ln} for ln, c, sg in pieces]
+    return line, pd.DataFrame(legs), sorted(map(int, used.OBJECTID)), pct_certain, pieces
 
 
 def build_routes(cfg, stations, sites_gdf):
@@ -98,18 +128,22 @@ def build_routes(cfg, stations, sites_gdf):
             return st.loc[ref].geometry
         return si.loc[ref].geometry
 
-    feats, legs_all = [], []
+    feats, legs_all, piece_feats = [], [], []
     for leg, grp in wps.groupby("leg", sort=False):
         grp = grp.sort_values("order", key=lambda s: s.astype(int))
         wp = gpd.GeoDataFrame(grp, geometry=[geom_for(r) for r in grp.pleiades_id],
                               crs=cfg["route"]["metric_crs"])
-        line, legs, segs, pct = trace_leg(G, coords, node_ids, roads, wp, cfg["route"]["flag_snap_km"])
+        line, legs, segs, pct, pieces = trace_leg(G, coords, node_ids, roads, wp,
+                                                  cfg["route"]["flag_snap_km"])
+        for i, pc in enumerate(pieces, 1):
+            piece_feats.append({"leg": leg, "piece": i, **pc})
         legs.insert(0, "leg", leg)
         legs_all.append(legs)
         feats.append({"leg": leg, "length_km": round(line.length / 1000, 1),
                       "pct_length_certain": pct, "darmc_objectids": ",".join(map(str, segs)),
                       "geometry": line})
     routes = gpd.GeoDataFrame(feats, crs=cfg["route"]["metric_crs"]).to_crs("EPSG:4326")
+    route_pieces = gpd.GeoDataFrame(piece_feats, crs=cfg["route"]["metric_crs"]).to_crs("EPSG:4326")
 
     # distance of each station to the Salaria line and position along it
     sal = next(f["geometry"] for f in feats if f["leg"] == "salaria")
@@ -117,4 +151,4 @@ def build_routes(cfg, stations, sites_gdf):
     stations = stations.copy()
     stations["distance_to_route_m"] = st_m.geometry.distance(sal).round(0).values
     stations["route_km"] = (st_m.geometry.apply(sal.project) / 1000).round(1).values
-    return routes, pd.concat(legs_all, ignore_index=True), stations, roads
+    return routes, route_pieces, pd.concat(legs_all, ignore_index=True), stations, roads

@@ -46,8 +46,13 @@ svg{display:block;width:100%;height:100%}
 .land{fill:var(--land);stroke:var(--rule);stroke-width:.5}
 .road{fill:none;stroke:var(--road);stroke-opacity:.45;stroke-width:.6}
 .road.m{stroke-opacity:.7;stroke-width:.9}
-.route{fill:none;stroke:var(--salaria);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.route.salt_to_rome{stroke-dasharray:4 4;stroke-width:2.2}
+.route{fill:none;stroke:var(--salaria);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+/* course marked uncertain in DARMC: dashed and lighter */
+.route.unc{stroke-dasharray:7 5;stroke-width:2.6;stroke-linecap:butt;stroke-opacity:.8}
+/* salt pans to Rome: a stand-in shortest path, not a traced named road */
+.route.salt_to_rome{stroke-dasharray:.1 5;stroke-width:3;stroke-opacity:.9;stroke-linecap:round}
+.lkey{display:grid;grid-template-columns:34px 1fr;gap:4px 8px;align-items:center;margin:0}
+.lkey svg{width:34px;height:10px;overflow:visible}
 .hit{fill:transparent;stroke:none;cursor:pointer}
 .site{stroke:var(--land);stroke-width:1.2;cursor:pointer}
 .site.not_checked{fill:var(--land)!important;stroke:var(--s-none);stroke-width:1.6}
@@ -112,7 +117,13 @@ footer{font-size:12px;color:var(--muted)}
   <div class="hint" id="hint">Scroll to zoom · click a place</div>
   <details class="legend" id="legend" open>
     <summary>Legend and filters</summary>
-    <h3>Salt sites today</h3>
+    <h3>The road</h3>
+    <div class="lkey">
+      <svg aria-hidden="true"><line class="route" x1="2" y1="5" x2="32" y2="5"/></svg><span>Via Salaria, course certain</span>
+      <svg aria-hidden="true"><line class="route unc" x1="2" y1="5" x2="32" y2="5"/></svg><span>Via Salaria, course uncertain</span>
+      <svg aria-hidden="true"><line class="route salt_to_rome" x1="2" y1="5" x2="32" y2="5"/></svg><span>Salt pans to Rome (stand-in path)</span>
+    </div>
+    <h3 style="margin-top:8px">Salt sites today</h3>
     <div class="chips" id="chips"></div>
     <h3 style="margin-top:8px">Via Salaria stations today</h3>
     <div class="chips" id="stchips"></div>
@@ -154,7 +165,10 @@ function size(){
 function drawStatic(){
   gLand.selectAll("path").data(DATA.land).join("path").attr("class","land").attr("d", path);
   gRoads.selectAll("path").data(DATA.roads).join("path").attr("class", d => "road" + (d.properties.m ? " m":"")).attr("d", path);
-  gRoute.selectAll("path").data(DATA.routes).join("path").attr("class", d => "route " + d.properties.leg).attr("d", path);
+  // one path per stretch of equal certainty; the stand-in leg keeps a single style
+  gRoute.selectAll("path").data(DATA.pieces).join("path")
+    .attr("class", d => "route " + d.properties.leg + (d.properties.leg === "salaria" && !d.properties.c ? " unc" : ""))
+    .attr("d", path);
 }
 
 function symbolFor(status){
@@ -206,17 +220,26 @@ function bboxOf(features){
   return [[x0,y0],[x1,y1]];
 }
 function pts(arr){ return arr.map(([lon,lat]) => ({type:"Feature", geometry:{type:"Point", coordinates:[lon,lat]}})); }
-function zoomTo(features, pad=40, instant=false){
+function zoomTo(features, pad=40, instant=false, labelRoom=0){
   const box = svg.node().getBoundingClientRect(); W = box.width; H = box.height;
   if (W < 500) pad = Math.min(pad, 24);
   const [[x0,y0],[x1,y1]] = bboxOf(features);
-  const s = Math.min(60, Math.min((W - 2*pad) / Math.max(x1-x0, 1e-6), (H - 2*pad) / Math.max(y1-y0, 1e-6)));
-  const t = d3.zoomIdentity.translate(W/2, H/2).scale(s).translate(-(x0+x1)/2, -(y0+y1)/2);
+  // fit into the part of the map the open legend does not cover (beside it or above it, whichever is larger)
+  let fx = 0, fy = 0, fw = W, fh = H;
+  const lg = document.getElementById("legend");
+  if (lg.open) {
+    const L = lg.getBoundingClientRect(), right = W - (L.right - box.left), above = L.top - box.top;
+    if (right * H >= above * W) { fx = W - right; fw = right; } else { fh = above; }
+    if (fw < 0.4 * W && fh < 0.4 * H) { fx = 0; fy = 0; fw = W; fh = H; }   // too little room: ignore the legend
+  }
+  if (W >= 500) fw -= labelRoom;   // keep end-of-road labels inside the frame
+  const s = Math.min(60, Math.min((fw - 2*pad) / Math.max(x1-x0, 1e-6), (fh - 2*pad) / Math.max(y1-y0, 1e-6)));
+  const t = d3.zoomIdentity.translate(fx + fw/2, fy + fh/2).scale(s).translate(-(x0+x1)/2, -(y0+y1)/2);
   const reduce = instant || matchMedia("(prefers-reduced-motion: reduce)").matches;
   (reduce ? svg : svg.transition().duration(900)).call(zoom.transform, t);
 }
 const VIEWS = {
-  salaria: (instant) => zoomTo([salaria, salt2rome], 40, instant),
+  salaria: (instant) => zoomTo([salaria, salt2rome], 40, instant, 130),
   empire: () => zoomTo(pts(sitesMapped.filter(d => d.map_layer!=="far_comparison").map(d => [d.lon,d.lat]))),
   far: () => zoomTo(pts(sitesMapped.map(d => [d.lon,d.lat])))
 };
@@ -256,7 +279,8 @@ function intro(view){
   panel.innerHTML = `
     <section><h2>Where the salt went inland</h2>
     <p>Salt from the pans at the mouth of the Tiber travelled up the Via Salaria to the Sabine hills and on to the Adriatic. Pliny tied the road's name to that trade. Today some of the old salt places still make salt, and others are museums, spas or quiet ruins.</p>
-    <p class="note">The traced line runs ${r.km} km from Porta Salaria to Castrum Truentinum on the DARMC road network (${r.pct}% of it marked certain). The usual figure for the ancient road is 242 km; DARMC straightens the bends.</p></section>
+    <p class="note">The traced line runs ${r.km} km from Porta Salaria to Castrum Truentinum on the DARMC road network (${r.pct}% of it marked certain). The usual figure for the ancient road is 242 km; DARMC straightens the bends.</p>
+    <p class="note"><b>Solid and dashed.</b> DARMC, following the Barrington Atlas, marks each road segment as certain or uncertain. The solid stretches are the ones marked certain; the dashed ones show the likely course, not a confirmed one. The dotted line from the salt pans is the shortest path on the network, standing in for the Via Campana and Via Portuensis. This is about where the road ran; the grades below are about the salt sites.</p></section>
     <section><h4>The ${DATA.sites.length} salt sites today</h4>${counts()}</section>
     <section><h4>Stations on the main road</h4>
     <table><thead><tr><th>Then</th><th>Now</th><th>Status</th><th class="n">km</th></tr></thead><tbody>${stRows}</tbody></table>

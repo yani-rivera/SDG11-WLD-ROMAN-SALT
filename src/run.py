@@ -22,7 +22,7 @@ def main():
 
     sites_df, sites_gdf = build_sites(cfg)
     stations = build_stations(cfg)
-    routes, legs, stations, roads_m = build_routes(cfg, stations, sites_gdf)
+    routes, route_pieces, legs, stations, roads_m = build_routes(cfg, stations, sites_gdf)
 
     outs = {
         "sites_csv": write_csv(sites_df, "salt_sites_status.csv", cfg),
@@ -30,8 +30,10 @@ def main():
         "stations_csv": write_csv(stations.drop(columns="geometry"), "via_salaria_stations_status.csv", cfg),
         "stations_geojson": write_geojson(stations, "via_salaria_stations_status.geojson", cfg),
         "routes_geojson": write_geojson(routes, "routes.geojson", cfg),
+        "route_pieces_geojson": write_geojson(route_pieces, "route_pieces.geojson", cfg),
+        "route_pieces_csv": write_csv(route_pieces.drop(columns="geometry"), "route_pieces.csv", cfg),
         "legs_csv": write_csv(legs, "route_legs.csv", cfg),
-        "page": build_page(cfg, sites_df, stations, routes, legs, roads_m),
+        "page": build_page(cfg, sites_df, stations, routes, route_pieces, legs, roads_m),
     }
     notes = {
         "sites_total": int(len(sites_df)),
@@ -39,6 +41,8 @@ def main():
         "sites_unmapped": sites_df.loc[sites_df.lat_used.isna(), "site_id"].tolist(),
         "status_counts": sites_df.now_status.value_counts().to_dict(),
         "routes": routes.drop(columns="geometry").to_dict("records"),
+        "route_certainty": route_pieces.groupby(["leg", "certain"]).length_km.sum().round(1)
+                                       .reset_index().to_dict("records"),
         "flagged_legs": legs[legs.flag].to_dict("records"),
         "licences": "Road lines derive from DARMC (CC BY-NC 3.0); Pleiades points CC BY 3.0; "
                     "GeoNames points CC BY 4.0; Natural Earth public domain.",
